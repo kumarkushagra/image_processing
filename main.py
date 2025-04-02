@@ -1,32 +1,31 @@
-from fastapi import FastAPI, HTTPException, Form, Request
+from fastapi import FastAPI, HTTPException, Form
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import uvicorn
-from license_plate_extractor import process_license_plate
+from license_plate_extractor import process_license_plate  # Ensure this module has your API key configurable
 
-app = FastAPI(title="License Plate Extractor API 😎")
+app = FastAPI()
 
 # ------------------------------
-# Actual API endpoint (JSON based)
+# DO NOT CHANGE THIS ONE:
 # ------------------------------
-class ImageLink(BaseModel):
-    url: str
+class ImageRequest(BaseModel):
+    imageUrl: str  # Match Express.js parameter
 
-@app.post("/extract_plate")
-async def extract_plate(image: ImageLink):
+@app.post("/extractNumber")
+async def extract_plate(image: ImageRequest):
     """
     API endpoint to extract license plate text from an image URL.
-    Expected payload: { "url": "<IMAGE_URL>" }
+    Expected payload: { "imageUrl": "<IMAGE_URL>" }
     """
     try:
-        result = process_license_plate(image.url)
-        return {"plate_text": result}
+        result = process_license_plate(image.imageUrl)
+        return {"numberPlate": result}  # Match Express.js response format
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
+        
 # ------------------------------
-# Testing endpoint (HTML interface)
+# HTML Testing Endpoints
 # ------------------------------
 @app.get("/test", response_class=HTMLResponse)
 async def test_form():
@@ -52,14 +51,14 @@ async def test_form():
 @app.post("/test", response_class=HTMLResponse)
 async def test_submit(url: str = Form(...)):
     """
-    Accepts the URL from the HTML form, processes it, and returns the result as HTML.
+    Processes the submitted image URL from the HTML form.
     """
     try:
         result = process_license_plate(url)
         response_html = f"""
         <html>
             <head>
-                <title>License Plate Extractor Test</title>
+                <title>Extraction Result</title>
             </head>
             <body>
                 <h2>Extraction Result</h2>
